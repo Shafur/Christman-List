@@ -1,4 +1,4 @@
-# Kris's Christmas List
+# Shafhaven Wish Lists
 
 A gift editor and a separate shopper link. The editor always shows all gifts and receives no purchase status. The shopper view hides purchased gifts. A single conditional database update prevents two shoppers from marking the same gift purchased.
 

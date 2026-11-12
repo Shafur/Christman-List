@@ -45,9 +45,6 @@ const previewCache = new Map();
 
 function productImage(url) {
   const page = new URL(url);
-  if (page.hostname === 'www.jlhufford.com' && page.pathname.replace(/\/$/, '') === '/products/rancilio-commercial-portafilter') {
-    return Promise.resolve('https://www.jlhufford.com/cdn/shop/products/rancilio-single-spout-rancilio-commercial-portafilter-jl-hufford-machine-parts-and-accessories-3961988382829.jpg?v=1553355995&width=320');
-  }
   page.hash = '';
   if (!previewCache.has(url)) {
     const endpoint = new URL('https://api.microlink.io/');
