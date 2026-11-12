@@ -1,5 +1,5 @@
 const $ = selector => document.querySelector(selector);
-const owner = location.pathname === '/owner';
+const owner = location.pathname !== '/shop';
 const mode = owner ? 'owner' : 'shop';
 const storage = 'christmas-' + mode;
 const sharedKey = new URLSearchParams(location.hash.slice(1)).get('key');
@@ -11,6 +11,9 @@ if (sharedKey) {
 const dialog = $('#editor');
 const form = $('#gift');
 let current;
+let shopperKey = '';
+let registering = false;
+let legacy = false;
 let pendingPhotos = [];
 let photoRequired = false;
 const picker = form.elements.photo;
@@ -151,9 +154,12 @@ async function load(message = '') {
     return;
   }
   try {
-    const {gifts} = await api();
+    const {gifts, name, shopperKey: shareKey} = await api();
     if (version !== loadVersion) return;
     $('#unlock').hidden = true;
+    shopperKey = shareKey || '';
+    $('#my-list').textContent = name;
+    $('#intro').textContent = owner ? '' : name + ' — Mark a gift purchased after you buy it.';
     $('#tools').hidden = !owner;
     $('#my-list').hidden = !owner;
     $('#list').replaceChildren(...gifts.map(card));
@@ -233,10 +239,43 @@ async function compress(file) {
   return encoded;
 }
 
+function authMode() {
+  $('#username').required = !legacy;
+  $('#username').parentElement.hidden = legacy;
+  $('#name-field').hidden = !registering;
+  $('#list-name').required = registering;
+  $('#key').minLength = legacy ? 1 : 10;
+  $('#key').autocomplete = registering ? 'new-password' : 'current-password';
+  $('#auth-title').textContent = registering ? 'Create your wish list' : legacy ? 'Open your existing list' : 'Open your wish list';
+  $('#sign-in').textContent = registering ? 'Create list' : 'Sign in';
+  $('#toggle-register').textContent = registering || legacy ? 'Back to sign in' : 'Create a list';
+  $('#legacy').hidden = registering || legacy;
+}
+$('#toggle-register').onclick = () => { registering = !registering && !legacy; legacy = false; authMode(); };
+$('#legacy').onclick = () => { legacy = true; registering = false; authMode(); };
 $('#unlock').onsubmit = async event => {
   event.preventDefault();
-  key = $('#key').value.trim();
-  sessionStorage.setItem(storage, key);
+  $('#sign-in').disabled = true;
+  try {
+    if (legacy) key = $('#key').value.trim();
+    else {
+      const result = await api({action: registering ? 'register' : 'login', username: $('#username').value, password: $('#key').value, name: $('#list-name').value});
+      key = result.token;
+    }
+    sessionStorage.setItem(storage, key);
+    $('#key').value = '';
+    await load();
+  } catch (error) { status(error.message); }
+  finally { $('#sign-in').disabled = false; }
+};
+$('#logout').onclick = async () => {
+  try { await api({action: 'logout'}); }
+  catch (error) { status(error.message); return; }
+  key = shopperKey = '';
+  ++loadVersion;
+  sessionStorage.removeItem(storage);
+  $('#tools').hidden = $('#my-list').hidden = true;
+  $('#list').replaceChildren();
   await load();
 };
 for (const choice of document.querySelectorAll('[data-kind]')) {
@@ -247,7 +286,7 @@ for (const choice of document.querySelectorAll('[data-kind]')) {
 }
 $('#cancel').onclick = () => dialog.close();
 $('#share').onclick = async () => {
-  const secret = prompt('Enter the shopper key from your setup.');
+  const secret = shopperKey;
   if (!secret?.trim()) return;
   const url = new URL('/shop', location.origin);
   url.hash = new URLSearchParams({key: secret.trim()});

@@ -7,8 +7,16 @@
 <header><span aria-hidden="true">✦</span><h1>Shafhaven Wish Lists</h1><p id="intro"></p></header>
 <main>
 <p id="status" role="status"></p>
-<form id="unlock" hidden><label>Editor key<input id="key" required type="password" autocomplete="current-password"></label><button>Open editor</button></form>
-<div id="tools" class="actions" hidden><details id="add-menu"><summary>＋ Add an item</summary><div class="choices"><button type="button" data-kind="link">Add link</button><button type="button" data-kind="photo">Add photo</button><button type="button" data-kind="note">Add note</button></div></details><button class="secondary" id="share">Copy shopper link</button></div>
+<form id="unlock" hidden>
+<h2 id="auth-title">Open your wish list</h2>
+<label>Username<input id="username" required minlength="3" maxlength="40" pattern="[a-zA-Z0-9_-]{3,40}" autocomplete="username"></label>
+<label id="name-field" hidden>List name<input id="list-name" maxlength="80" placeholder="Kris’s Christmas list"></label>
+<label>Password<input id="key" required type="password" minlength="10" maxlength="128" autocomplete="current-password"></label>
+<div class="actions"><button id="sign-in">Sign in</button><button id="toggle-register" type="button" class="secondary">Create a list</button></div>
+<p id="auth-help">Each person can create their own private list and shopper link.</p>
+<button id="legacy" type="button" class="secondary">Use existing editor key</button>
+</form>
+<div id="tools" class="actions" hidden><details id="add-menu"><summary>＋ Add an item</summary><div class="choices"><button type="button" data-kind="link">Add link</button><button type="button" data-kind="photo">Add photo</button><button type="button" data-kind="note">Add note</button></div></details><button class="secondary" id="share">Copy shopper link</button><button class="secondary" id="logout">Sign out</button></div>
 <h2 id="my-list" hidden>My List</h2>
 <section id="list" aria-label="Gifts"></section>
 </main>

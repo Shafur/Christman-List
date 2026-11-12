@@ -7,6 +7,9 @@ process.env.OWNER_KEY ??= 'local-editor';
 process.env.SHOPPER_KEY ??= 'local-shopper';
 const db = new DatabaseSync('christmas.sqlite');
 db.exec(schema);
+if (!db.prepare('PRAGMA table_info(gifts)').all().some(column => column.name === 'list_id')) {
+  db.exec("ALTER TABLE gifts ADD COLUMN list_id TEXT NOT NULL DEFAULT ''");
+}
 const api = handler((sql, args = []) => db.prepare(sql.replace(/\$\d+/g, '?')).all(...args));
 const assets = new Map([
   ['/', ['index.html', 'text/html']], ['/owner', ['index.html', 'text/html']],

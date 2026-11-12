@@ -1,0 +1,56 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { DatabaseSync } from 'node:sqlite';
+import { handler, schema } from './api/gifts.js';
+
+test('personal lists isolate gifts, protect surprises, and preserve legacy access', async () => {
+  const db = new DatabaseSync(':memory:');
+  db.exec(schema);
+  db.exec("ALTER TABLE gifts ADD COLUMN list_id TEXT NOT NULL DEFAULT ''");
+  process.env.OWNER_KEY = 'test-editor';
+  process.env.SHOPPER_KEY = 'test-shopper';
+  const run = handler((sql, args = []) => db.prepare(sql.replace(/\$\d+/g, '?')).all(...args));
+  async function call(mode, token = '', body) {
+    let result;
+    const res = {setHeader() {}, end(value) { result = {status: this.statusCode, ...JSON.parse(value)}; }};
+    await run({url: '/api/gifts?mode=' + mode, method: body ? 'POST' : 'GET', headers: {authorization: 'Bearer ' + token}, body}, res);
+    return result;
+  }
+  const account = username => call('owner', '', {action:'register', username, password:'long password test', name:username + ' list'});
+  const a = await account('alice');
+  const b = await account('bobby');
+  assert.equal(a.status, 200);
+  assert.equal((await account('alice')).status, 409);
+  assert.equal((await call('owner', '', {action:'login', username:'alice', password:'wrong password'})).status, 401);
+  const login = await call('owner', '', {action:'login', username:'ALICE', password:'long password test'});
+  assert.equal(login.status, 200);
+  const save = {action:'save', title:'A gift', url:'', notes:'Blue please'};
+  assert.equal((await call('owner', a.token, save)).status, 200);
+  const alice = await call('owner', a.token);
+  const id = alice.gifts[0].id;
+  assert.equal((await call('owner', b.token)).gifts.length, 0);
+  assert.equal((await call('owner', b.token, {...save, id})).status, 404);
+  await call('owner', b.token, {action:'remove', id});
+  const bob = await call('owner', b.token);
+  assert.equal((await call('shop', bob.shopperKey, {action:'buy', id})).status, 409);
+  assert.equal((await call('shop', alice.shopperKey, save)).status, 403);
+  assert.equal((await call('owner', alice.shopperKey)).status, 401);
+  assert.equal((await call('shop', a.token)).status, 401);
+  assert.equal((await call('shop', alice.shopperKey, {action:'buy', id})).status, 200);
+  assert.equal((await call('shop', alice.shopperKey, {action:'buy', id})).status, 409);
+  assert.equal((await call('shop', alice.shopperKey)).gifts.length, 0);
+  const after = await call('owner', a.token);
+  assert.deepEqual(after.gifts, alice.gifts);
+  assert.equal('bought' in after.gifts[0], false);
+  assert.equal('shopperKey' in await call('shop', alice.shopperKey), false);
+  await call('owner', 'test-editor', save);
+  assert.equal((await call('shop', 'test-shopper')).gifts.length, 1);
+  assert.equal((await call('owner', b.token)).gifts.length, 0);
+  await call('owner', a.token, {action:'logout'});
+  assert.equal((await call('owner', a.token)).status, 401);
+  db.prepare('UPDATE sessions SET expires = 0').run();
+  assert.equal((await call('owner', login.token)).status, 401);
+  for (let i = 0; i < 5; i++) await call('owner', '', {action:'login', username:'alice', password:'wrong password'});
+  assert.equal((await call('owner', '', {action:'login', username:'alice', password:'long password test'})).status, 429);
+  db.close();
+});
