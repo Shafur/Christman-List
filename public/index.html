@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="referrer" content="no-referrer">
+<title>Kris’s Christmas List</title><link rel="stylesheet" href="/style.css"><script type="module" src="/app.js"></script>
+</head><body>
+<header><span aria-hidden="true">✦</span><h1>Kris’s Christmas List</h1><p id="intro"></p></header>
+<main>
+<p id="status" role="status"></p>
+<form id="unlock" hidden><label>Editor key<input id="key" required type="password" autocomplete="current-password"></label><button>Open editor</button></form>
+<div id="tools" class="actions" hidden><details id="add-menu"><summary>＋ Add an item</summary><div class="choices"><button type="button" data-kind="link">Add link</button><button type="button" data-kind="photo">Add photo</button><button type="button" data-kind="note">Add note</button></div></details><button class="secondary" id="share">Copy shopper link</button></div>
+<h2 id="my-list" hidden>My List</h2>
+<section id="list" aria-label="Gifts"></section>
+</main>
+<dialog id="editor"><form id="gift">
+<h2 id="heading">Add a gift</h2>
+<label>Gift name<input name="title" required maxlength="120"></label>
+<label id="url-field">Product link<input name="url" type="url" maxlength="2048" placeholder="https://"></label>
+<label id="notes-field">Notes<textarea name="notes" rows="3" maxlength="2000" placeholder="Size, color, or anything helpful"></textarea></label>
+<label id="photo-field">Photos (up to 4)<input name="photo" type="file" multiple accept="image/jpeg,image/png,image/webp"></label>
+<ul id="pending-photos" aria-label="Photos to upload" hidden></ul>
+<label id="remove-photo" hidden><span><input name="remove" type="checkbox"> Clear existing photos when saving</span></label>
+<p id="error" role="alert"></p>
+<div class="actions"><button id="save">Save item</button><button id="cancel" type="button" class="secondary">Cancel</button></div>
+</form></dialog><dialog id="viewer" aria-label="Expanded photo"><button id="close-viewer">Close</button><img id="expanded" alt=""></dialog></body></html>
